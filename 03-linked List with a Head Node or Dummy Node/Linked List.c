@@ -62,5 +62,8 @@ int main() {
 
     imprimir_com_cabeca(minha_lista);
 
+    liberar_lista(minha_lista);
+    minha_lista = NULL; // Evita ponteiro solto na memória
+
     return 0;
 }
