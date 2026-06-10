@@ -3,17 +3,21 @@
 #include <string.h>
 
 
+
 struct StudentNode {
     int ra;
     char name[50];
+    int is_active; 
     struct StudentNode *left;
     struct StudentNode *right;
 };
+
 
 struct StudentNode* createStudent(int ra, const char* name) {
     struct StudentNode *newNode = (struct StudentNode*)malloc(sizeof(struct StudentNode));
     newNode->ra = ra;
     strcpy(newNode->name, name);
+    newNode->is_active = 1; 
     newNode->left = NULL;
     newNode->right = NULL;
     return newNode;
@@ -26,89 +30,55 @@ struct StudentNode* insertStudent(struct StudentNode *root, int ra, const char* 
     return root;
 }
 
+
 void inorderTraversal(struct StudentNode *root) {
     if (root != NULL) {
         inorderTraversal(root->left);
-        printf("[RA: %d - %s] ", root->ra, root->name);
+        
+        if (root->is_active == 1) {
+            printf("[RA: %d - %s] ", root->ra, root->name);
+        } else {
+           
+            printf("[RA: %d - %s (INATIVO)] ", root->ra, root->name);
+        }
+        
         inorderTraversal(root->right);
     }
 }
 
 
-
-// Função auxiliar para encontrar o menor valor de uma subrvore
-struct StudentNode* minValueNode(struct StudentNode* node) {
-    struct StudentNode* current = node;
-    // O menor valor sempre estará o mais a esquerda possível
-    while (current && current->left != NULL) {
-        current = current->left;
+void softDeleteStudent(struct StudentNode* root, int raToFind) {
+    if (root == NULL) {
+        printf("Erro: RA %d nao encontrado.\n", raToFind);
+        return;
     }
-    return current;
-}
-
-// Função deletar um aluno 
-struct StudentNode* deleteStudent(struct StudentNode* root, int raToFind) {
-    // Busca 
-    if (root == NULL) return root;
 
     if (raToFind < root->ra) {
-        root->left = deleteStudent(root->left, raToFind);
+        softDeleteStudent(root->left, raToFind);
     } else if (raToFind > root->ra) {
-        root->right = deleteStudent(root->right, raToFind);
-    } 
-    //  Encontrado
-    else {
-        // Caso 1 e 2: Nó com apenas um filho ou nenhum filho
-        if (root->left == NULL) {
-            struct StudentNode* temp = root->right;
-            free(root); // Libera a memória do nó atual
-            return temp; // Retorna o filho da direita 
-        } else if (root->right == NULL) {
-            struct StudentNode* temp = root->left;
-            free(root); // Libera a memória do nó atual
-            return temp; // Retorna o filho da esquerda
-        }
-
-        // Caso 3: Nó com dois filhos
-        // Encontra o Sucessor Em-Ordem (o menor valor da subárvore direita)
-        struct StudentNode* temp = minValueNode(root->right);
-
-        // Copia os dados do sucessor para este nó
-        root->ra = temp->ra;
-        strcpy(root->name, temp->name);
-
-        // Deleta o sucessor na subárvore direita (que agora está duplicado)
-        root->right = deleteStudent(root->right, temp->ra);
+        softDeleteStudent(root->right, raToFind);
+    } else {
+        // Encontrou o aluno e desativa ele
+        root->is_active = 0;
+        printf("Aluno %s (RA %d) desativado com sucesso. Historico mantido.\n", root->name, root->ra);
     }
-    return root;
 }
-
 
 int main() {
     struct StudentNode *root = NULL;
 
-    // insercoes
     root = insertStudent(root, 500, "Vitor"); 
-    insertStudent(root, 300, "Manuela"); // Folha (Caso 1)
+    insertStudent(root, 300, "Manuela"); 
     insertStudent(root, 700, "Carlos");
-    insertStudent(root, 200, "Ana");
-    insertStudent(root, 400, "João");
-    insertStudent(root, 600, "Pedro");
-    insertStudent(root, 800, "Lucas");
 
     printf("--- BANCO DE DADOS ACADEMICO ---\n");
-    printf("Alunos matriculados (Em-Ordem):\n");
     inorderTraversal(root);
     printf("\n\n");
 
-    // exclusões
-    printf(">> Deletando Manuela (RA 300 - Caso com dois filhos no estado atual)...\n");
-    root = deleteStudent(root, 300);
+    printf(">> Trancando matricula da Manuela (RA 300)...\n");
+    softDeleteStudent(root, 300);
     
-    printf(">> Deletando Pedro (RA 600 - Caso 1: Folha)...\n");
-    root = deleteStudent(root, 600);
-
-    printf("\nAlunos apos as remocoes:\n");
+    printf("\nAlunos apos exclusao logica:\n");
     inorderTraversal(root);
     printf("\n");
 
