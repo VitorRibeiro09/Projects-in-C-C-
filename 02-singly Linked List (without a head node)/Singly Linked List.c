@@ -33,8 +33,19 @@ void imprimir(No* lista) {
         atual = atual->proximo; // Vai até o proximo endereco
     }
     printf("NULL\n");
-}
 
+
+    }
+
+// 4. Função para liberar a lista 
+void liberar_lista(No* lista) {
+    No* atual = lista;
+    while (atual != NULL) {
+        No* proximo = atual->proximo; // Salva o ponteiro para o próximo antes de apagar o atual
+        free(atual);                  // Libera a memória do nó atual
+        atual = proximo;              // Avança para o próximo
+    }
+}
 int main() {
     // Começa com a lista vazia 
     No *minha_lista = NULL;
@@ -46,5 +57,7 @@ int main() {
 
     imprimir(minha_lista);
 
-    return 0;
+
+    return 0; 
 }
+
