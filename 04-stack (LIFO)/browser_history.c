@@ -2,12 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 typedef struct Pagina {
     char url[150];
     struct Pagina* prox;
 } Pagina;
-
 
 typedef struct Pilha {
     Pagina* topo;
@@ -26,7 +24,6 @@ void abrir_pagina(Pilha* p, const char* url) {
     p->topo = novaPagina;
     printf("[+] Pagina '%s' aberta.\n", url);
 }
-
 
 void fechar_pagina(Pilha* navegacao, Pilha* historico) {
     if (navegacao->topo == NULL) {
@@ -47,7 +44,6 @@ void fechar_pagina(Pilha* navegacao, Pilha* historico) {
     printf("[-] Pagina '%s' fechada e movida para o historico.\n", paginaFechada->url);
 }
 
-
 void exibir_pilha(Pilha* p, const char* titulo) {
     printf("\n--- %s ---\n", titulo);
     if (p->topo == NULL) {
@@ -61,6 +57,51 @@ void exibir_pilha(Pilha* p, const char* titulo) {
         atual = atual->prox;
     }
     printf("-------------------\n\n");
+}
+
+// --- NOVAS FUNÇÕES ---
+
+void excluir_item_historico(Pilha* historico, const char* url_alvo) {
+    if (historico->topo == NULL) {
+        printf("[-] O historico ja esta vazio.\n");
+        return;
+    }
+
+    Pagina* atual = historico->topo;
+    Pagina* anterior = NULL;
+
+    while (atual != NULL && strcmp(atual->url, url_alvo) != 0) {
+        anterior = atual;
+        atual = atual->prox;
+    }
+
+    if (atual == NULL) {
+        printf("[-] Pagina '%s' nao encontrada no historico.\n", url_alvo);
+        return;
+    }
+
+    if (anterior == NULL) {
+        historico->topo = atual->prox;
+    } else {
+        anterior->prox = atual->prox;
+    }
+
+    free(atual);
+    printf("[!] Pagina '%s' excluida do historico isoladamente.\n", url_alvo);
+}
+
+void limpar_historico(Pilha* historico) {
+    Pagina* atual = historico->topo;
+    Pagina* proximo;
+
+    while (atual != NULL) {
+        proximo = atual->prox;
+        free(atual);
+        atual = proximo;
+    }
+    
+    historico->topo = NULL;
+    printf("[!] Historico limpo com sucesso.\n");
 }
 
 int main() {
@@ -79,25 +120,27 @@ int main() {
     abrir_pagina(&abas_abertas, "docs.oracle.com/javafx");
     abrir_pagina(&abas_abertas, "geoguessr.com/mapa-mundi");
 
-    // 3. Mostra como a pilha de abas ficou 
-    exibir_pilha(&abas_abertas, "ESTADO: ABAS ATUAIS");
-
-    // 4. Fecha as duas abas do topo 
-    printf(">> Fechando abas...\n");
+    // 4. Fecha três abas
+    printf("\n>> Fechando abas...\n");
+    fechar_pagina(&abas_abertas, &historico);
     fechar_pagina(&abas_abertas, &historico);
     fechar_pagina(&abas_abertas, &historico);
 
-    // 5. Mostra os dois cenários separados
-    exibir_pilha(&abas_abertas, "ESTADO: ABAS RESTANTES");
-    exibir_pilha(&historico, "ESTADO: HISTORICO (RECEM FECHADAS)");
+    // Mostra o histórico inicial
+    exibir_pilha(&historico, "ESTADO: HISTORICO ATUAL");
 
-    // 6. Abre mais uma página
-    printf(">> Trabalhando no projeto...\n");
-    abrir_pagina(&abas_abertas, "github.com/tg-control");
+    // 5. Testando a exclusão de um item específico do histórico
+    printf(">> Apagando um rastro especifico...\n");
+    excluir_item_historico(&historico, "docs.oracle.com/javafx");
+    
+    exibir_pilha(&historico, "ESTADO: HISTORICO POS-EXCLUSAO ESPECIFICA");
 
-    // 7. Exibição final
-    exibir_pilha(&abas_abertas, "VISAO GERAL: ABAS ABERTAS");
-    exibir_pilha(&historico, "VISAO GERAL: HISTORICO DE NAVEGACAO");
+    // 6. Limpando todo o histórico
+    printf(">> Limpando todo o historico...\n");
+    limpar_historico(&historico);
 
+    exibir_pilha(&historico, "VISAO GERAL: HISTORICO FINAL");
+
+ 
     return 0;
 }
