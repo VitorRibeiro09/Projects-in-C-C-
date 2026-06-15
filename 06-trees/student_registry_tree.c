@@ -10,7 +10,6 @@ struct StudentNode {
     struct StudentNode *right;
 };
 
-// --- FUNÇÕES DE CRIAÇÃO E INSERÇÃO ---
 
 struct StudentNode* createStudent(int ra, const char* name) {
     struct StudentNode *newNode = (struct StudentNode*)malloc(sizeof(struct StudentNode));
@@ -29,7 +28,6 @@ struct StudentNode* insertStudent(struct StudentNode *root, int ra, const char* 
     return root;
 }
 
-// --- FUNÇÃO DE EXIBIÇÃO ---
 
 void inorderTraversal(struct StudentNode *root) {
     if (root != NULL) {
@@ -45,9 +43,7 @@ void inorderTraversal(struct StudentNode *root) {
     }
 }
 
-// --- FUNÇÕES DE EXCLUSÃO ---
 
-// 1. Exclusão Lógica (Soft Delete)
 void softDeleteStudent(struct StudentNode* root, int raToFind) {
     if (root == NULL) {
         printf("Erro: RA %d nao encontrado.\n", raToFind);
@@ -59,54 +55,10 @@ void softDeleteStudent(struct StudentNode* root, int raToFind) {
     } else if (raToFind > root->ra) {
         softDeleteStudent(root->right, raToFind);
     } else {
-        // Encontrou o aluno e desativa ele
         root->is_active = 0;
         printf("Aluno %s (RA %d) desativado com sucesso. Historico mantido.\n", root->name, root->ra);
     }
 }
-
-// Função auxiliar para encontrar o menor valor (usada no Hard Delete)
-struct StudentNode* findMin(struct StudentNode* root) {
-    while (root->left != NULL) {
-        root = root->left;
-    }
-    return root;
-}
-
-// 2. Exclusão Física (Hard Delete)
-struct StudentNode* hardDeleteStudent(struct StudentNode* root, int raToFind) {
-    if (root == NULL) {
-        return root; 
-    }
-
-    if (raToFind < root->ra) {
-        root->left = hardDeleteStudent(root->left, raToFind);
-    } else if (raToFind > root->ra) {
-        root->right = hardDeleteStudent(root->right, raToFind);
-    } else {
-        // Encontrou o nó para deletar fisicamente
-        if (root->left == NULL) {
-            struct StudentNode* temp = root->right;
-            free(root);
-            return temp;
-        } else if (root->right == NULL) {
-            struct StudentNode* temp = root->left;
-            free(root);
-            return temp;
-        }
-
-        // Caso tenha dois filhos: substitui pelo menor valor à direita
-        struct StudentNode* temp = findMin(root->right);
-        root->ra = temp->ra;
-        strcpy(root->name, temp->name);
-        root->is_active = temp->is_active;
-
-        root->right = hardDeleteStudent(root->right, temp->ra);
-    }
-    return root;
-}
-
-// --- FUNÇÃO PARA LIMPAR A ÁRVORE ---
 
 void freeTree(struct StudentNode* root) {
     if (root != NULL) {
@@ -116,7 +68,60 @@ void freeTree(struct StudentNode* root) {
     }
 }
 
-// --- FUNÇÃO PRINCIPAL ---
+
+struct StudentNode* removerRaiz(struct StudentNode* root) {
+    struct StudentNode *p, *q;
+    
+   
+    if (root->left == NULL) {
+        q = root->right;
+        free(root);
+        return q;
+    }
+   
+    if (root->right == NULL) {
+        q = root->left;
+        free(root);
+        return q;
+    }
+    
+ 
+    p = root;
+    q = root->left;
+    while (q->right != NULL) {
+        p = q;
+        q = q->right;
+    }
+    
+    if (p != root) {
+        p->right = q->left;
+        q->left = root->left;
+    }
+    
+    q->right = root->right;
+    free(root);
+    
+    return q; 
+}
+
+struct StudentNode* hardDeleteStudent(struct StudentNode* root, int raToFind) {
+    if (root == NULL) return NULL;
+
+    if (root->ra == raToFind) {
+        return removerRaiz(root); 
+    }
+    
+  
+    if (raToFind < root->ra) {
+        root->left = hardDeleteStudent(root->left, raToFind);
+    } else {
+        root->right = hardDeleteStudent(root->right, raToFind);
+    }
+    
+    return root;
+}
+
+
 
 int main() {
     struct StudentNode *root = NULL;
@@ -129,7 +134,7 @@ int main() {
     inorderTraversal(root);
     printf("\n\n");
 
-    // Testando a exclusão lógica (Soft Delete)
+    
     printf(">> Trancando matricula da Manuela (RA 300)...\n");
     softDeleteStudent(root, 300);
     
@@ -137,7 +142,7 @@ int main() {
     inorderTraversal(root);
     printf("\n\n");
 
-    // Testando a exclusão física (Hard Delete)
+    
     printf(">> Removendo definitivamente a Manuela (RA 300)...\n");
     root = hardDeleteStudent(root, 300);
 
@@ -145,7 +150,7 @@ int main() {
     inorderTraversal(root);
     printf("\n\n");
 
-    // Liberando a memória ao final da execução
+    // Limpeza final de memória
     freeTree(root);
     root = NULL; 
 
