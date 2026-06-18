@@ -1,82 +1,124 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-// 1. Definição do Nó
-typedef struct Node {
-    int data;
-    struct Node *next;
-} Node;
+struct StudentNode {
+    int ra;
+    char name[50];
+    int is_active; 
+    struct StudentNode *left;
+    struct StudentNode *right;
+};
 
-// 2. Estrutura da Fila (Guarda o início e o fim)
-typedef struct Queue {
-    Node *front;
-    Node *rear;
-} Queue;
-
-// Função para criar uma fila vazia
-Queue* create_queue() {
-    Queue *q = (Queue*) malloc(sizeof(Queue));
-    q->front = q->rear = NULL;
-    return q;
+// --- FUNÇÕES DE CRIAÇÃO E INSERÇÃO ---
+struct StudentNode* createStudent(int ra, const char* name) {
+    struct StudentNode *newNode = (struct StudentNode*)malloc(sizeof(struct StudentNode));
+    newNode->ra = ra;
+    strcpy(newNode->name, name);
+    newNode->is_active = 1; 
+    newNode->left = NULL;
+    newNode->right = NULL;
+    return newNode;
 }
 
-// 3. ENQUEUE (Enfileirar) - Adiciona no FIM
-void enqueue(Queue *q, int value) {
-    Node *new_node = (Node*) malloc(sizeof(Node));
-    new_node->data = value;
-    new_node->next = NULL;
-
-    // Se a fila está vazia, o novo nó é tanto a frente quanto a traseira
-    if (q->rear == NULL) {
-        q->front = q->rear = new_node;
-        return;
-    }
-
-    // Adiciona o novo nó no fim e atualiza o ponteiro 'rear'
-    q->rear->next = new_node;
-    q->rear = new_node;
-    printf("Enqueued: %d\n", value);
+struct StudentNode* insertStudent(struct StudentNode *root, int ra, const char* name) {
+    if (root == NULL) return createStudent(ra, name);
+    if (ra < root->ra) root->left = insertStudent(root->left, ra, name);
+    else if (ra > root->ra) root->right = insertStudent(root->right, ra, name);
+    return root;
 }
 
-// 4. DEQUEUE (Desenfileirar) - Remove da FRENTE
-void dequeue(Queue *q) {
-    if (q->front == NULL) {
-        printf("Queue Underflow!\n");
-        return;
+// --- FUNÇÃO DE EXIBIÇÃO ---
+void inorderTraversal(struct StudentNode *root) {
+    if (root != NULL) {
+        inorderTraversal(root->left);
+        
+        if (root->is_active == 1) {
+            printf("[RA: %d - %s] ", root->ra, root->name);
+        } else {
+            printf("[RA: %d - %s (INATIVO)] ", root->ra, root->name);
+        }
+        
+        inorderTraversal(root->right);
     }
-
-    Node *temp = q->front;
-    q->front = q->front->next;
-
-    // Se a frente ficou NULL, a traseira também deve ser NULL
-    if (q->front == NULL) {
-        q->rear = NULL;
-    }
-
-    printf("Dequeued: %d\n", temp->data);
-    free(temp); // Limpeza de memória 
 }
 
-void display_queue(Queue *q) {
-    Node *current = q->front;
-    printf("Queue: ");
-    while (current != NULL) {
-        printf("%d -> ", current->data);
-        current = current->next;
+// --- FUNÇÃO DE LIMPEZA ---
+void freeTree(struct StudentNode* root) {
+    if (root != NULL) {
+        freeTree(root->left);
+        freeTree(root->right);
+        free(root);
     }
-    printf("NULL\n");
 }
 
+// --- FUNÇÃO DE REMOÇÃO DA RAIZ (Padrão Slide) ---
+struct StudentNode* removerRaiz(struct StudentNode* root) {
+    struct StudentNode *p, *q;
+    
+    if (root == NULL) return NULL; // Proteção extra caso a árvore já esteja vazia
+
+    // Caso 1: Não tem filho à esquerda
+    if (root->left == NULL) {
+        q = root->right;
+        free(root);
+        return q;
+    }
+    // Caso 2: Não tem filho à direita
+    if (root->right == NULL) {
+        q = root->left;
+        free(root);
+        return q;
+    }
+    
+    // Caso 3: Tem os dois filhos. Busca o ANTECESSOR.
+    p = root;
+    q = root->left;
+    while (q->right != NULL) {
+        p = q;
+        q = q->right;
+    }
+    
+    if (p != root) {
+        p->right = q->left;
+        q->left = root->left;
+    }
+    
+    q->right = root->right;
+    free(root);
+    
+    return q; 
+}
+
+// --- FUNÇÃO PRINCIPAL ---
 int main() {
-    Queue *q = create_queue();
+    struct StudentNode *root = NULL;
 
-    enqueue(q, 10);
-    enqueue(q, 20);
-    enqueue(q, 30);
-    display_queue(q);
+    // Inserindo os alunos. O primeiro a entrar (Vitor, 500) se torna a raiz principal.
+    root = insertStudent(root, 500, "Vitor"); 
+    insertStudent(root, 300, "Manuela"); 
+    insertStudent(root, 700, "Carlos");
 
-    dequeue(q);
-    display_queue(q);
+    printf("--- BANCO DE DADOS ACADEMICO ---\n");
+    printf("Estado inicial da arvore:\n");
+    inorderTraversal(root);
+    printf("\n\n");
+
+    // Removendo APENAS a raiz principal diretamente
+    printf(">> Removendo a raiz principal (RA 500)...\n");
+    
+    // Como a função removerRaiz devolve o novo topo da árvore, 
+    // precisamos atualizar a variável root da main:
+    root = removerRaiz(root);
+
+    printf("\nAlunos apos a exclusao da raiz principal:\n");
+    inorderTraversal(root);
+    printf("\n\n");
+
+    // Limpeza final de memória
+    freeTree(root);
+    root = NULL; 
 
     return 0;
 }
+
