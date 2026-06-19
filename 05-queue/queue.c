@@ -10,7 +10,10 @@ struct StudentNode {
     struct StudentNode *right;
 };
 
-// --- FUNÇÕES DE CRIAÇÃO E INSERÇÃO ---
+// ==========================================
+// FUNÇÕES DE CRIAÇÃO E INSERÇÃO
+// ==========================================
+
 struct StudentNode* createStudent(int ra, const char* name) {
     struct StudentNode *newNode = (struct StudentNode*)malloc(sizeof(struct StudentNode));
     newNode->ra = ra;
@@ -28,7 +31,10 @@ struct StudentNode* insertStudent(struct StudentNode *root, int ra, const char* 
     return root;
 }
 
-// --- FUNÇÃO DE EXIBIÇÃO ---
+// ==========================================
+// FUNÇÕES DE EXIBIÇÃO E LIMPEZA
+// ==========================================
+
 void inorderTraversal(struct StudentNode *root) {
     if (root != NULL) {
         inorderTraversal(root->left);
@@ -43,7 +49,6 @@ void inorderTraversal(struct StudentNode *root) {
     }
 }
 
-// --- FUNÇÃO DE LIMPEZA ---
 void freeTree(struct StudentNode* root) {
     if (root != NULL) {
         freeTree(root->left);
@@ -52,26 +57,48 @@ void freeTree(struct StudentNode* root) {
     }
 }
 
-// --- FUNÇÃO DE REMOÇÃO DA RAIZ (Padrão Slide) ---
+// ==========================================
+// FUNÇÕES DE EXCLUSÃO
+// ==========================================
+
+// 1. Exclusão Lógica (Apenas desativa)
+void softDeleteStudent(struct StudentNode* root, int raToFind) {
+    if (root == NULL) {
+        printf("Erro: RA %d nao encontrado.\n", raToFind);
+        return;
+    }
+
+    if (raToFind < root->ra) {
+        softDeleteStudent(root->left, raToFind);
+    } else if (raToFind > root->ra) {
+        softDeleteStudent(root->right, raToFind);
+    } else {
+        root->is_active = 0;
+        printf("Aluno %s (RA %d) desativado com sucesso. Historico mantido.\n", root->name, root->ra);
+    }
+}
+
+// 2. O Executor: Remove um nó específico (tratando-o como raiz)
 struct StudentNode* removerRaiz(struct StudentNode* root) {
     struct StudentNode *p, *q;
     
-    if (root == NULL) return NULL; // Proteção extra caso a árvore já esteja vazia
+    // Tratativa extra de segurança para raiz nula
+    if (root == NULL) return NULL;
 
-    // Caso 1: Não tem filho à esquerda
+    // Caso 1: Nó sem filho à esquerda (cobre o caso do nó único também)
     if (root->left == NULL) {
         q = root->right;
         free(root);
         return q;
     }
-    // Caso 2: Não tem filho à direita
+    // Caso 2: Nó sem filho à direita
     if (root->right == NULL) {
         q = root->left;
         free(root);
         return q;
     }
     
-    // Caso 3: Tem os dois filhos. Busca o ANTECESSOR.
+    // Caso 3: Nó com dois filhos. Busca o ANTECESSOR (maior da esquerda).
     p = root;
     q = root->left;
     while (q->right != NULL) {
@@ -79,6 +106,7 @@ struct StudentNode* removerRaiz(struct StudentNode* root) {
         q = q->right;
     }
     
+    // Desconecta o antecessor e refaz as ligações
     if (p != root) {
         p->right = q->left;
         q->left = root->left;
@@ -87,38 +115,72 @@ struct StudentNode* removerRaiz(struct StudentNode* root) {
     q->right = root->right;
     free(root);
     
-    return q; 
+    return q; // O antecessor vira o novo topo deste pedaço da árvore
 }
 
-// --- FUNÇÃO PRINCIPAL ---
+// 3. O Rastreador: Busca o RA e chama a remoção
+struct StudentNode* buscaERemove(struct StudentNode* root, int raToFind) {
+    if (root == NULL) {
+        return NULL; // Chegou no fundo e não achou
+    }
+    
+    if (raToFind < root->ra) {
+        // Desce pra esquerda e costura o retorno
+        root->left = buscaERemove(root->left, raToFind);
+    } 
+    else if (raToFind > root->ra) {
+        // Desce pra direita e costura o retorno
+        root->right = buscaERemove(root->right, raToFind);
+    } 
+    else {
+        // Achou o nó alvo! Ele vira a raiz da operação de remoção.
+        root = removerRaiz(root); 
+    }
+    
+    return root; // Devolve o nó reestruturado
+}
+
+// ==========================================
+// FUNÇÃO PRINCIPAL
+// ==========================================
+
 int main() {
     struct StudentNode *root = NULL;
 
-    // Inserindo os alunos. O primeiro a entrar (Vitor, 500) se torna a raiz principal.
+    // Inserindo dados na nossa Árvore Binária de Busca
     root = insertStudent(root, 500, "Vitor"); 
     insertStudent(root, 300, "Manuela"); 
     insertStudent(root, 700, "Carlos");
 
     printf("--- BANCO DE DADOS ACADEMICO ---\n");
-    printf("Estado inicial da arvore:\n");
+    printf("ESTADO INICIAL:\n");
     inorderTraversal(root);
     printf("\n\n");
 
-    // Removendo APENAS a raiz principal diretamente
-    printf(">> Removendo a raiz principal (RA 500)...\n");
-    
-    // Como a função removerRaiz devolve o novo topo da árvore, 
-    // precisamos atualizar a variável root da main:
+    // Teste 1: Exclusão Lógica
+    printf(">> Operacao: Trancar matricula do Carlos (RA 700)...\n");
+    softDeleteStudent(root, 700);
+    inorderTraversal(root);
+    printf("\n\n");
+
+    // Teste 2: Busca e Remoção (O rastreador em ação)
+    printf(">> Operacao: Apagar definitivamente a Manuela (RA 300)...\n");
+    root = buscaERemove(root, 300);
+    inorderTraversal(root);
+    printf("\n\n");
+
+    // Teste 3: Remover direto pela raiz principal
+    printf(">> Operacao: Apagar definitivamente o Vitor (RA 500 - Raiz Principal)...\n");
     root = removerRaiz(root);
-
-    printf("\nAlunos apos a exclusao da raiz principal:\n");
     inorderTraversal(root);
     printf("\n\n");
 
-    // Limpeza final de memória
+    // Prevenção de memory leak
     freeTree(root);
     root = NULL; 
 
     return 0;
 }
 
+    
+    
