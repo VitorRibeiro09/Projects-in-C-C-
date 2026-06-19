@@ -1,74 +1,90 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
 struct Ticket {
     int ticket_id;
     struct Ticket *next;
 };
-
 
 struct Queue {
     struct Ticket *front; 
     struct Ticket *rear;  
 };
 
-
+// ==========================================
+// CRIAÇÃO DA FILA (COM NÓ CABEÇA)
+// ==========================================
 struct Queue* createQueue() {
     struct Queue *q = (struct Queue*)malloc(sizeof(struct Queue));
-    q->front = q->rear = NULL;
+    
+    // Cria o nó cabeça (fantasma). O ID dele não importa, pois nunca será lido.
+    struct Ticket *dummy = (struct Ticket*)malloc(sizeof(struct Ticket));
+    dummy->ticket_id = -1; 
+    dummy->next = NULL;
+    
+    // Tanto o início quanto o fim apontam para o nó cabeça inicialmente
+    q->front = dummy;
+    q->rear = dummy;
+    
     return q;
 }
 
-
+// ==========================================
+// INSERÇÃO (MUITO MAIS SIMPLES AGORA)
+// ==========================================
 void enqueue(struct Queue *q, int id) {
     struct Ticket *new_ticket = (struct Ticket*)malloc(sizeof(struct Ticket));
     new_ticket->ticket_id = id;
     new_ticket->next = NULL;
     
-    if (q->rear == NULL) {
-        q->front = q->rear = new_ticket;
-        return;
-    }
-    
+    // Como q->rear nunca é NULL (no mínimo aponta para a cabeça), 
+    // podemos inserir direto sem fazer "if".
     q->rear->next = new_ticket;
     q->rear = new_ticket;
 }
 
-
 void enqueueNode(struct Queue *q, struct Ticket *ticket) {
     ticket->next = NULL; 
     
-    if (q->rear == NULL) {
-        q->front = q->rear = ticket;
-        return;
-    }
-    
+    // Mesma lógica simplificada aqui
     q->rear->next = ticket;
     q->rear = ticket;
 }
 
-
+// ==========================================
+// REMOÇÃO
+// ==========================================
 struct Ticket* dequeue(struct Queue *q) {
-    if (q->front == NULL) {
+    // A fila está vazia se o nó cabeça não aponta para ninguém
+    // (ou seja, front e rear apontam para o mesmo lugar)
+    if (q->front->next == NULL) {
         printf("Fila vazia! Ninguem para atender.\n");
         return NULL;
     }
     
-    struct Ticket *temp = q->front;
-    q->front = q->front->next; 
+    // O nó real a ser removido é o que vem DEPOIS da cabeça
+    struct Ticket *temp = q->front->next;
     
-    if (q->front == NULL) {
-        q->rear = NULL; 
+    // A cabeça agora "pula" o nó que está saindo e aponta para o próximo
+    q->front->next = temp->next; 
+    
+    // Se acabamos de remover o último elemento real da fila,
+    // o rear precisa voltar a apontar para a cabeça!
+    if (q->front->next == NULL) {
+        q->rear = q->front; 
     }
     
     temp->next = NULL; 
     return temp; 
 }
 
-// Imprime a fila
+// ==========================================
+// EXIBIÇÃO
+// ==========================================
 void printQueue(struct Queue *q, const char* nome_fila) {
-    struct Ticket *temp = q->front;
+    // Começamos a ler a partir do elemento DEPOIS da cabeça
+    struct Ticket *temp = q->front->next;
+    
     printf("[%s]: ", nome_fila);
     if (temp == NULL) {
         printf("Vazia\n");
@@ -82,7 +98,6 @@ void printQueue(struct Queue *q, const char* nome_fila) {
 }
 
 int main() {
-    
     struct Queue *fila_espera = createQueue();
     struct Queue *historico_atendimentos = createQueue();
     
@@ -101,7 +116,8 @@ int main() {
     struct Ticket *atendido = dequeue(fila_espera);
     if (atendido != NULL) {
         printf("Atendendo senha [%d] no Guiche 1.\n", atendido->ticket_id);
-        enqueueNode(historico_atendimentos, atendido); // Salva no banco de dados / painel
+        // Salva o nó diretamente na fila de histórico sem alocar nova memória
+        enqueueNode(historico_atendimentos, atendido); 
     }
     
     printf("\nESTADO ATUAL DO SISTEMA:\n");
@@ -110,3 +126,8 @@ int main() {
     
     return 0;
 }
+
+    
+    
+    
+    
