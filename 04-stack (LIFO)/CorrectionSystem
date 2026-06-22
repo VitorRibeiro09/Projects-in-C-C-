@@ -1,0 +1,109 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+
+typedef struct Node {
+    int id_aluno; // Dado real que faz sentido ser manipulado
+    struct Node *next;
+} Node;
+
+
+Node* push_novo(Node* top, int id) {
+    Node *new_node = (Node*) malloc(sizeof(Node));
+    if (new_node == NULL) return top;
+
+    new_node->id_aluno = id;
+    new_node->next = top;
+    
+    return new_node;
+}
+
+
+
+Node* pop_sem_free(Node** top_ref) {
+    if (*top_ref == NULL) {
+        printf("Aviso: Pilha vazia!\n");
+        return NULL;
+    }
+
+    Node *no_destacado = *top_ref;
+    *top_ref = no_destacado->next;   
+    
+    no_destacado->next = NULL;      
+    
+    return no_destacado;             
+}
+
+// 4. Empilha um nó que JÁ EXISTE na memória
+Node* push_existente(Node* top, Node* no_existente) {
+    if (no_existente == NULL) return top;
+
+    no_existente->next = top;
+    return no_existente;
+}
+
+
+void display(Node* top, const char* nome_pilha) {
+    Node* current = top;
+    printf("%-20s: ", nome_pilha);
+    
+    if (current == NULL) {
+        printf("Vazia\n");
+        return;
+    }
+    
+    while (current != NULL) {
+        printf("[Aluno %d] -> ", current->id_aluno);
+        current = current->next;
+    }
+    printf("NULL\n");
+}
+
+int main() {
+    // Nossas duas pilhas sem cabeça, inicialmente vazias
+    Node *pendentes = NULL;
+    Node *corrigidas = NULL;
+
+    printf("--- CHEGARAM NOVOS EXERCICIOS ---\n");
+    pendentes = push_novo(pendentes, 101);
+    pendentes = push_novo(pendentes, 102);
+    pendentes = push_novo(pendentes, 103);
+    
+    display(pendentes, "Provas Pendentes");
+    display(corrigidas, "Provas Corrigidas");
+
+    printf("\n--- PROFESSOR CORRIGIU O TOPO DA PILHA ---\n");
+    
+    Node *prova_avaliada = pop_sem_free(&pendentes); 
+    
+    
+    if (prova_avaliada != NULL) {
+        corrigidas = push_existente(corrigidas, prova_avaliada);
+        printf("Prova do Aluno %d corrigida com sucesso!\n", prova_avaliada->id_aluno);
+    }
+
+    display(pendentes, "Provas Pendentes");
+    display(corrigidas, "Provas Corrigidas");
+
+    printf("\n--- PROFESSOR CORRIGIU MAIS UMA ---\n");
+    prova_avaliada = pop_sem_free(&pendentes); 
+    if (prova_avaliada != NULL) {
+        corrigidas = push_existente(corrigidas, prova_avaliada);
+    }
+    
+    display(pendentes, "Provas Pendentes");
+    display(corrigidas, "Provas Corrigidas");
+
+    printf("\n--- ERRO! DESFAZENDO A ULTIMA CORRECAO ---\n");
+    // Professor percebeu que somou a nota errado e precisa voltar a prova para pendentes
+    Node *prova_para_revisar = pop_sem_free(&corrigidas);
+    if (prova_para_revisar != NULL) {
+        pendentes = push_existente(pendentes, prova_para_revisar);
+        printf("Prova do Aluno %d voltou para a pilha de pendentes.\n", prova_para_revisar->id_aluno);
+    }
+
+    display(pendentes, "Provas Pendentes");
+    display(corrigidas, "Provas Corrigidas");
+
+    return 0;
+}
