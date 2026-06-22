@@ -37,8 +37,7 @@ void enqueue(struct Queue *q, int id) {
     new_ticket->ticket_id = id;
     new_ticket->next = NULL;
     
-    // Como q->rear nunca é NULL (no mínimo aponta para a cabeça), 
-    // podemos inserir direto sem fazer "if".
+
     q->rear->next = new_ticket;
     q->rear = new_ticket;
 }
@@ -68,7 +67,7 @@ struct Ticket* dequeue(struct Queue *q) {
     // A cabeça agora "pula" o nó que está saindo e aponta para o próximo
     q->front->next = temp->next; 
     
-    // Se acabamos de remover o último elemento real da fila,
+    // Seremover o último elemento real da fila
     // o rear precisa voltar a apontar para a cabeça!
     if (q->front->next == NULL) {
         q->rear = q->front; 
@@ -82,7 +81,7 @@ struct Ticket* dequeue(struct Queue *q) {
 // EXIBIÇÃO
 // ==========================================
 void printQueue(struct Queue *q, const char* nome_fila) {
-    // Começamos a ler a partir do elemento DEPOIS da cabeça
+    // ler a partir do elemento DEPOIS da cabeça
     struct Ticket *temp = q->front->next;
     
     printf("[%s]: ", nome_fila);
