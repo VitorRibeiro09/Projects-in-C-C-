@@ -1,63 +1,86 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-// 1. Definição do Nó da Pilha
-typedef struct Node {
-    int data;
-    struct Node *next;
-} Node;
+// 1. Apenas a estrutura do nó (a Tela do sistema)
+typedef struct Tela {
+    char nome_arquivo[50];
+    struct Tela* prox;
+} Tela;
 
-// 2. Operação PUSH (Empilhar)
-// É idêntico ao "inserir no início" da lista sem cabeça.
-Node* push(Node* top, int value) {
-    Node *new_node = (Node*) malloc(sizeof(Node));
-    if (new_node == NULL) return top;
-
-    new_node->data = value;
-    new_node->next = top; // O novo nó aponta para o antigo topo
+// ==========================================
+// PUSH (Inserir): Retorna o novo topo
+// ==========================================
+Tela* abrir_tela(Tela* topo_atual, const char* arquivo_fxml) {
+    // Cria a nova tela dinamicamente
+    Tela* nova_tela = (Tela*)malloc(sizeof(Tela));
+    strcpy(nova_tela->nome_arquivo, arquivo_fxml);
     
-    printf("Pushed %d to stack\n", value);
-    return new_node; // O novo nó agora é o topo
+    // O próximo da nova tela é o topo antigo
+    nova_tela->prox = topo_atual;
+    
+    printf("[+] Tela '%s' carregada via Scene Builder.\n", arquivo_fxml);
+    
+    // Retorna a nova tela, que agora é o topo oficial
+    return nova_tela;
 }
 
-// 3. Operação POP (Desempilhar)
-// Remove o elemento do topo e libera a memória.
-Node* pop(Node* top) {
-    if (top == NULL) {
-        printf("Stack Underflow! (Stack is empty)\n");
+// ==========================================
+// POP (Remover): Retorna o novo topo
+// ==========================================
+Tela* fechar_tela(Tela* topo_atual) {
+    if (topo_atual == NULL) {
+        printf("[-] Nenhuma tela para fechar.\n");
         return NULL;
     }
-
-    Node *temp = top;      // Guarda o endereço do topo atual para liberar depois
-    top = top->next;      // O topo agora passa a ser o próximo elemento
     
-    printf("Popped %d from stack\n", temp->data);
-    free(temp);           // passo importante: liberar a memória manualmente com o free()
+    // Isola a tela que está no topo
+    Tela* tela_fechada = topo_atual;
     
-    return top;
+    // O novo topo passa a ser a tela de baixo
+    Tela* novo_topo = topo_atual->prox;
+    
+    printf("[-] Fechando '%s' e voltando para a tela anterior.\n", tela_fechada->nome_arquivo);
+    
+    // Libera a memória da tela fechada
+    free(tela_fechada);
+    
+    // Retorna a referência do novo topo
+    return novo_topo;
 }
 
-void display(Node* top) {
-    Node* current = top;
-    printf("Current Stack: ");
-    while (current != NULL) {
-        printf("[%d] -> ", current->data);
-        current = current->next;
+// ==========================================
+// EXIBIÇÃO
+// ==========================================
+void listar_telas(Tela* topo) {
+    printf("\n=== HISTORICO DE TELAS ===\n");
+    Tela* atual = topo;
+    
+    if (atual == NULL) {
+        printf(" (Nenhuma tela aberta)\n");
     }
-    printf("NULL\n");
+    
+    while (atual != NULL) {
+        printf(" -> %s\n", atual->nome_arquivo);
+        atual = atual->prox;
+    }
+    printf("==========================\n\n");
 }
 
 int main() {
-    Node *stack = NULL; // Pilha começa vazia
+  
+    Tela* pilha_telas = NULL; 
 
-    stack = push(stack, 10);
-    stack = push(stack, 20);
-    stack = push(stack, 30);
 
-    display(stack);
+    pilha_telas = abrir_tela(pilha_telas, "Login.fxml");
+    pilha_telas = abrir_tela(pilha_telas, "DashboardPrincipal.fxml");
+    pilha_telas = abrir_tela(pilha_telas, "GerenciarAlunos.fxml");
 
-    stack = pop(stack);
-    display(stack);
+    listar_telas(pilha_telas);
+
+    pilha_telas = fechar_tela(pilha_telas);
+    
+    listar_telas(pilha_telas);
 
     return 0;
 }
